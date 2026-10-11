@@ -23,7 +23,7 @@ const categories = [
   { name: "Autos", icon: CarFront },
 ];
 
-const products = [
+const initialProducts = [
   {
     id: 1,
     name: "Hotel Boutique Palermo",
@@ -275,6 +275,7 @@ function App() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [products, setProducts] = useState(initialProducts);
 
   const pageSize = 10;
 
@@ -320,8 +321,6 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // Selección aleatoria sin repetir productos.
-  // Se calcula una sola vez por carga de la aplicación.
   const [recommendations] = useState(() => {
     const shuffled = [...products];
 
@@ -333,9 +332,18 @@ function App() {
     return shuffled.slice(0, 10);
   });
 
-  if (window.location.pathname.startsWith("/administracion")) {
-  return <AdminPanel />;
-  }
+if (window.location.pathname.startsWith("/administracion")) {
+  return (
+    <AdminPanel
+      products={products}
+      onDeleteProduct={(productId) => {
+        setProducts((currentProducts) =>
+          currentProducts.filter((product) => product.id !== productId)
+        );
+      }}
+    />
+  );
+}
 
   if (selectedProduct) {
     return (
