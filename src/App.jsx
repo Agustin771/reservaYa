@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ProductDetail from "./pages/ProductDetail";
+import AdminPanel from "./pages/AdminPanel";
 import {
   Search,
   Hotel,
@@ -331,6 +332,10 @@ function App() {
 
     return shuffled.slice(0, 10);
   });
+
+  if (window.location.pathname.startsWith("/administracion")) {
+  return <AdminPanel />;
+  }
 
   if (selectedProduct) {
     return (
