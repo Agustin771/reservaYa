@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ProductDetail from "./pages/ProductDetail";
 import AdminPanel from "./pages/AdminPanel";
 import {
@@ -275,7 +275,24 @@ function App() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [products, setProducts] = useState(initialProducts);
+const [products, setProducts] = useState(() => {
+  try {
+    const savedProducts = localStorage.getItem("reservaya-products");
+    return savedProducts ? JSON.parse(savedProducts) : initialProducts;
+  } catch {
+    return initialProducts;
+  }
+});
+
+useEffect(() => {
+  try {
+    localStorage.setItem("reservaya-products", JSON.stringify(products));
+  } catch {
+    console.error(
+      "No se pudieron guardar los productos. Puede faltar espacio de almacenamiento."
+    );
+  }
+}, [products]);
 
   const pageSize = 10;
 
@@ -321,21 +338,25 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const [recommendations] = useState(() => {
-    const shuffled = [...products];
+  const recommendations = [...products]
+  .sort((a, b) => a.id - b.id)
+  .slice(0, 10);
 
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-
-    return shuffled.slice(0, 10);
-  });
+  
 
 if (window.location.pathname.startsWith("/administracion")) {
   return (
     <AdminPanel
       products={products}
+      onAddProduct={(newProduct) => {
+        setProducts((currentProducts) => [
+          ...currentProducts,
+          {
+            ...newProduct,
+            id: Math.max(0, ...currentProducts.map((p) => p.id)) + 1,
+          },
+        ]);
+      }}
       onDeleteProduct={(productId) => {
         setProducts((currentProducts) =>
           currentProducts.filter((product) => product.id !== productId)
