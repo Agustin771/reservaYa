@@ -1,16 +1,117 @@
-# React + Vite
+🏡 ReservaYa
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ReservaYa es una aplicación web de reservas de alojamientos, desarrollada como proyecto integrador del desafío Professional Developer de Digital House.
 
-Currently, two official plugins are available:
+Permite visualizar alojamientos disponibles en un catálogo, consultar sus detalles y administrar productos mediante un panel de administración.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+🚀 Funcionalidades — Sprint 1
 
-## React Compiler
+🏠 Página principal con catálogo de alojamientos.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+🔎 Buscador y sección de categorías.
 
-## Expanding the ESLint configuration
+🖼️ Visualización de imágenes y detalle de cada alojamiento.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+📄 Paginación del catálogo.
+
+➕ Registro de nuevos productos desde el panel de administración.
+
+📋 Listado de productos registrados.
+
+🗑️ Eliminación de productos con confirmación.
+
+💾 Persistencia de datos mediante MySQL.
+
+🛠️ Tecnologías utilizadas
+
+Frontend
+
+React
+
+Vite
+
+JavaScript
+
+CSS
+
+Backend
+
+Java
+
+Spring Boot
+
+Spring Data JPA
+
+Spring Security
+
+Maven
+
+Base de datos
+
+MySQL
+
+⚙️ Instalación y ejecución
+
+Requisitos previos
+
+Java y Maven.
+
+Node.js y npm.
+
+MySQL Server.
+
+Git.
+
+1. Clonar el repositorio
+
+git clone https://github.com/Agustin771/reservaYa.git
+cd reservaYa
+
+2. Configurar la base de datos
+
+Iniciar MySQL y crear una base de datos para el proyecto:
+
+CREATE DATABASE reservaya;
+
+Configurar las credenciales de conexión en el backend según las variables utilizadas por la aplicación.
+
+No publicar contraseñas ni claves secretas en el repositorio.
+
+3. Ejecutar el backend
+
+Abrir el proyecto backend en el IDE o desde la terminal, ingresar a la carpeta correspondiente y ejecutar la aplicación Spring Boot.
+
+Verificar que la conexión con MySQL esté configurada correctamente antes de iniciar el servidor.
+
+4. Ejecutar el frontend
+
+Ingresar a la carpeta del frontend y ejecutar:
+
+npm install
+npm run dev
+
+Abrir en el navegador la dirección local que indique Vite en la terminal.
+
+🧪 Pruebas funcionales
+
+Durante el desarrollo se verificaron las siguientes operaciones:
+
+Crear productos desde el panel de administración.
+
+Visualizar los productos registrados en la página principal.
+
+Eliminar productos y comprobar su desaparición del catálogo.
+
+📌 Alcance del proyecto
+
+Este repositorio corresponde al desarrollo del Sprint 1 del desafío Professional Developer de Digital House.
+
+Las funcionalidades se incorporarán progresivamente de acuerdo con los requerimientos de los siguientes sprints.
+
+👨‍💻 Autor
+
+Agustín Pérez
+
+Proyecto académico — Digital House, Professional Developer.
+
+Repositorio: ReservaYa en GitHub
