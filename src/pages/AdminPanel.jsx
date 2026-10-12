@@ -15,42 +15,160 @@ import {
 } from "lucide-react";
 import "./AdminPanel.css";
 
-export default function AdminPanel({ products = [], onDeleteProduct }) {
+const EMPTY_FORM = {
+  name: "",
+  category: "Hoteles",
+  location: "",
+  price: "",
+  images: [""],
+  description: "",
+};
+
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=80";
+
+export default function AdminPanel({
+  products = [],
+  onAddProduct,
+  onDeleteProduct,
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const currentPath = window.location.pathname;
+  const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
   const isProductList = currentPath === "/administracion/productos";
   const isNewProduct = currentPath === "/administracion/productos/nuevo";
 
-  const isMobile = window.matchMedia("(max-width: 767px)").matches;
-
   const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(search.trim().toLowerCase())
+    String(product.name ?? "")
+      .toLowerCase()
+      .includes(search.trim().toLowerCase())
   );
+
+  function updateField(event) {
+    const { name, value } = event.target;
+
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  function updateImage(index, value) {
+    setForm((current) => {
+      const images = [...current.images];
+      images[index] = value;
+
+      return {
+        ...current,
+        images,
+        image: images[0] || "",
+      };
+    });
+  }
+
+  function addImageField() {
+    setForm((current) => ({
+      ...current,
+      images: [...current.images, ""],
+    }));
+  }
+
+  function removeImageField(index) {
+    setForm((current) => {
+      const images = current.images.filter((_, i) => i !== index);
+
+      return {
+        ...current,
+        images: images.length ? images : [""],
+        image: images[0] || "",
+      };
+    });
+  }
+
+  async function handleCreateProduct(event) {
+    event.preventDefault();
+    setFormError("");
+
+    const name = form.name.trim();
+    const location = form.location.trim();
+    const description = form.description.trim();
+    const price = Number(form.price);
+
+    if (!name || !location || !description || form.price.trim() === "") {
+      setFormError("Completá todos los campos obligatorios.");
+      return;
+    }
+
+    if (!Number.isFinite(price) || price < 0) {
+      setFormError("Ingresá un precio válido, igual o mayor a cero.");
+      return;
+    }
+
+    const images = form.images
+      .map((url) => url.trim())
+      .filter(Boolean);
+
+    if (images.length === 0) {
+      setFormError("Agregá al menos una imagen.");
+      return;
+    }
+
+    for (const image of images) {
+      try {
+        const parsedUrl = new URL(image);
+
+        if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+          throw new Error("URL inválida");
+        }
+      } catch {
+        setFormError("Revisá las URL de las imágenes.");
+        return;
+      }
+    }
+
+    if (!onAddProduct) {
+      setFormError("La función para guardar productos no está conectada.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      await onAddProduct({
+        name,
+        category: form.category,
+        location,
+        price,
+        image: images[0],
+        images,
+        description,
+      });
+
+      setForm(EMPTY_FORM);
+      window.location.href = "/administracion/productos";
+    } catch (error) {
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar el producto."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function handleDelete(product) {
     const confirmed = window.confirm(
-      `¿Seguro que querés eliminar "${product.name}"?\n\nEsta acción no se puede deshacer en esta sesión.`
+      `¿Seguro que querés eliminar "${product.name}"?\n\nEsta acción no se puede deshacer.`
     );
 
     if (confirmed) {
       onDeleteProduct?.(product.id);
     }
-  }
-
-  if (isMobile) {
-    return (
-      <main className="admin-mobile-message">
-        <ShieldCheck size={48} />
-        <h1>ReservaYa Administración</h1>
-        <p>
-          El panel de administración no está disponible en dispositivos
-          móviles. Ingresá desde una computadora.
-        </p>
-        <a href="/">Volver al inicio</a>
-      </main>
-    );
   }
 
   return (
@@ -76,6 +194,7 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
               !isProductList && !isNewProduct ? "admin-nav-active" : ""
             }`}
             href="/administracion"
+            onClick={() => setMenuOpen(false)}
           >
             <LayoutDashboard size={19} />
             <span>Panel principal</span>
@@ -86,6 +205,7 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
               isProductList ? "admin-nav-active" : ""
             }`}
             href="/administracion/productos"
+            onClick={() => setMenuOpen(false)}
           >
             <Package size={19} />
             <span>Lista de productos</span>
@@ -96,6 +216,7 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
               isNewProduct ? "admin-nav-active" : ""
             }`}
             href="/administracion/productos/nuevo"
+            onClick={() => setMenuOpen(false)}
           >
             <PlusCircle size={19} />
             <span>Agregar producto</span>
@@ -108,11 +229,19 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
         </a>
       </aside>
 
+      {menuOpen && (
+        <button
+          className="admin-mobile-overlay"
+          aria-label="Cerrar menú"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
       <main className="admin-main">
         <header className="admin-topbar">
           <button
             className="admin-menu-toggle"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => setMenuOpen((open) => !open)}
             aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
           >
             {menuOpen ? <X /> : <Menu />}
@@ -122,18 +251,19 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
             <span className="admin-topbar-label">
               RESERVAYA / ADMINISTRACIÓN
             </span>
+
             <h1>
               {isProductList
                 ? "Lista de productos"
                 : isNewProduct
-                  ? "Agregar producto"
-                  : "Panel de administración"}
+                ? "Agregar producto"
+                : "Panel de administración"}
             </h1>
           </div>
 
           <span className="admin-status">
             <span className="admin-status-dot" />
-            Modo demostración
+            Administración
           </span>
         </header>
 
@@ -143,9 +273,7 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
               <div>
                 <span className="admin-eyebrow">CATÁLOGO</span>
                 <h2>Productos registrados</h2>
-                <p>
-                  Consultá y gestioná los productos de ReservaYa.
-                </p>
+                <p>Consultá y gestioná los productos de ReservaYa.</p>
               </div>
 
               <a
@@ -193,14 +321,18 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
                       <td>
                         <div className="admin-product-cell">
                           <img
-                            src={product.image}
+                            src={product.image || DEFAULT_IMAGE}
                             alt=""
                             className="admin-product-thumb"
                           />
+
                           <div>
                             <strong>{product.name}</strong>
                             <small>
-                              ${product.price.toLocaleString("es-AR")}
+                              $
+                              {Number(product.price || 0).toLocaleString(
+                                "es-AR"
+                              )}
                             </small>
                           </div>
                         </div>
@@ -224,11 +356,11 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
                           <button
                             type="button"
                             className="admin-edit-button"
-                            title="Editar (próximamente)"
+                            title="Edición pendiente"
                             aria-label={`Editar ${product.name}`}
                             onClick={() =>
                               window.alert(
-                                "La edición de productos estará disponible en una próxima etapa."
+                                "La edición todavía no está implementada."
                               )
                             }
                           >
@@ -257,9 +389,11 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
                   <Package size={36} />
                   <h3>No encontramos productos</h3>
                   <p>
-                    Probá con otro nombre o revisá si hay productos
-                    registrados.
+                    {search
+                      ? "Probá con otro nombre."
+                      : "Todavía no hay productos registrados."}
                   </p>
+
                   {search && (
                     <button
                       className="admin-secondary-button"
@@ -278,21 +412,158 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
             </a>
           </section>
         ) : isNewProduct ? (
-          <section className="admin-placeholder">
-            <span className="admin-action-icon">
-              <PlusCircle size={28} />
-            </span>
-            <h2>Alta de productos</h2>
-            <p>
-              En el siguiente paso construiremos el formulario para
-              registrar productos, validar nombres y cargar imágenes.
-            </p>
-            <a
-              className="admin-secondary-button"
-              href="/administracion/productos"
+          <section className="admin-section admin-form-section">
+            <div className="admin-list-heading">
+              <div>
+                <span className="admin-eyebrow">CATÁLOGO</span>
+                <h2>Nuevo producto</h2>
+                <p>
+                  Completá los datos para agregar una nueva experiencia a ReservaYa.
+                </p>
+              </div>
+            </div>
+
+            <form
+              className="admin-product-form"
+              onSubmit={handleCreateProduct}
             >
-              Volver al listado
-            </a>
+              <div className="admin-form-grid">
+                <label className="admin-field">
+                  Nombre del producto *
+                  <input
+                    name="name"
+                    value={form.name}
+                    onChange={updateField}
+                    placeholder="Ej. Hotel Boutique Palermo"
+                    maxLength={120}
+                    required
+                  />
+                </label>
+
+                <label className="admin-field">
+                  Categoría *
+                  <select
+                    name="category"
+                    value={form.category}
+                    onChange={updateField}
+                    required
+                  >
+                    <option value="Hoteles">Hoteles</option>
+                    <option value="Vuelos">Vuelos</option>
+                    <option value="Moda">Moda</option>
+                    <option value="Autos">Autos</option>
+                  </select>
+                </label>
+
+                <label className="admin-field">
+                  Ubicación *
+                  <input
+                    name="location"
+                    value={form.location}
+                    onChange={updateField}
+                    placeholder="Ej. Palermo, Buenos Aires"
+                    maxLength={180}
+                    required
+                  />
+                </label>
+
+                <label className="admin-field">
+                  Precio de referencia (ARS) *
+                  <input
+                    name="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.price}
+                    onChange={updateField}
+                    placeholder="85000"
+                    required
+                  />
+                </label>
+
+                <div className="admin-field admin-field-full">
+                  <label>Imágenes del producto *</label>
+
+                  <span className="admin-field-help">
+                    Pegá una URL pública por imagen. La primera será la imagen principal.
+                  </span>
+
+                  <div className="admin-images-form-list">
+                    {form.images.map((image, index) => (
+                      <div className="admin-image-input-row" key={index}>
+                        <input
+                          type="url"
+                          value={image}
+                          onChange={(event) =>
+                            updateImage(index, event.target.value)
+                          }
+                          placeholder={`https://ejemplo.com/imagen-${index + 1}.jpg`}
+                          aria-label={`URL de imagen ${index + 1}`}
+                          required={index === 0}
+                        />
+
+                        {form.images.length > 1 && (
+                          <button
+                            type="button"
+                            className="admin-remove-image"
+                            onClick={() => removeImageField(index)}
+                            aria-label={`Eliminar imagen ${index + 1}`}
+                          >
+                            <X size={18} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="admin-secondary-button admin-add-image"
+                    onClick={addImageField}
+                  >
+                    <PlusCircle size={17} />
+                    Agregar otra imagen
+                  </button>
+                </div>
+
+                <label className="admin-field admin-field-full">
+                  Descripción *
+                  <textarea
+                    name="description"
+                    value={form.description}
+                    onChange={updateField}
+                    placeholder="Describí el producto o la experiencia..."
+                    maxLength={1000}
+                    rows={5}
+                    required
+                  />
+                </label>
+              </div>
+
+              {formError && (
+                <p className="admin-form-message admin-form-error" role="alert">
+                  {formError}
+                </p>
+              )}
+
+              <div className="admin-form-actions">
+                <a
+                  className="admin-cancel-button"
+                  href="/administracion/productos"
+                >
+                  Cancelar
+                </a>
+
+                <button
+                  className="admin-add-button"
+                  type="submit"
+                  disabled={saving}
+                >
+                  <PlusCircle size={18} />
+                  {saving ? "Guardando..." : "Guardar producto"}
+                </button>
+              </div>
+            </form>
           </section>
         ) : (
           <>
@@ -320,9 +591,7 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
                     <Package size={25} />
                   </span>
                   <h3>Lista de productos</h3>
-                  <p>
-                    Consultá los productos disponibles en el catálogo.
-                  </p>
+                  <p>Consultá los productos del catálogo.</p>
                   <span className="admin-action-link">
                     Ver productos →
                   </span>
@@ -339,9 +608,7 @@ export default function AdminPanel({ products = [], onDeleteProduct }) {
                     <PlusCircle size={25} />
                   </span>
                   <h3>Agregar producto</h3>
-                  <p>
-                    Prepará el alta de nuevos productos para ReservaYa.
-                  </p>
+                  <p>Completá el formulario de alta.</p>
                   <span className="admin-action-link">
                     Crear producto →
                   </span>
