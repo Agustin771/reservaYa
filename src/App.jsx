@@ -1,5 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ProductDetail from "./pages/ProductDetail";
+import AdminPanel from "./pages/AdminPanel";
+import {
+  obtenerProductos,
+  crearProducto,
+  eliminarProducto,
+} from "./services/productos";
 import {
   Search,
   Hotel,
@@ -20,129 +26,6 @@ const categories = [
   { name: "Vuelos", icon: Plane },
   { name: "Moda", icon: Shirt },
   { name: "Autos", icon: CarFront },
-];
-
-const products = [
-  {
-    id: 1,
-    name: "Hotel Boutique Palermo",
-    category: "Hoteles",
-    location: "Palermo, Buenos Aires",
-    price: 85000,
-    image:
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=80",
-    description: "Confort, diseño y una experiencia única.",
-  },
-  {
-    id: 2,
-    name: "Escapada a Bariloche",
-    category: "Vuelos",
-    location: "Bariloche, Argentina",
-    price: 180000,
-    image:
-      "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=900&q=80",
-    description: "Descubrí paisajes increíbles en la Patagonia.",
-  },
-  {
-    id: 3,
-    name: "Moda urbana",
-    category: "Moda",
-    location: "Buenos Aires, Argentina",
-    price: 25000,
-    image:
-      "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=900&q=80",
-    description: "Encontrá tu próximo look favorito.",
-  },
-  {
-    id: 4,
-    name: "SUV para viajar",
-    category: "Autos",
-    location: "Buenos Aires, Argentina",
-    price: 95000,
-    image:
-      "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=900&q=80",
-    description: "Espacio y comodidad para tu próximo viaje.",
-  },
-  {
-    id: 5,
-    name: "Hotel frente al mar",
-    category: "Hoteles",
-    location: "Mar del Plata, Argentina",
-    price: 72000,
-    image:
-      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=900&q=80",
-    description: "Despertate con vistas al océano.",
-  },
-  {
-    id: 6,
-    name: "Aventura en la montaña",
-    category: "Vuelos",
-    location: "Mendoza, Argentina",
-    price: 135000,
-    image:
-      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80",
-    description: "Una experiencia para los amantes de la naturaleza.",
-  },
-  {
-    id: 7,
-    name: "Colección elegante",
-    category: "Moda",
-    location: "Buenos Aires, Argentina",
-    price: 32000,
-    image:
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=900&q=80",
-    description: "Estilo y elegancia para cada ocasión.",
-  },
-  {
-    id: 8,
-    name: "Auto para escapadas",
-    category: "Autos",
-    location: "Tigre, Buenos Aires",
-    price: 65000,
-    image:
-      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80",
-    description: "Prepará tu próxima aventura sobre ruedas.",
-  },
-  {
-    id: 9,
-    name: "Resort con piscina",
-    category: "Hoteles",
-    location: "Córdoba, Argentina",
-    price: 110000,
-    image:
-      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=900&q=80",
-    description: "Relajación y comodidad para desconectar.",
-  },
-  {
-    id: 10,
-    name: "Look de temporada",
-    category: "Moda",
-    location: "Buenos Aires, Argentina",
-    price: 28000,
-    image:
-      "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=900&q=80",
-    description: "Renová tu estilo con nuevas propuestas.",
-  },
-  {
-    id: 11,
-    name: "Escapada a la naturaleza",
-    category: "Hoteles",
-    location: "Patagonia, Argentina",
-    price: 92000,
-    image:
-      "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=900&q=80",
-    description: "Descanso rodeado de paisajes naturales.",
-  },
-  {
-    id: 12,
-    name: "Viaje entre montañas",
-    category: "Vuelos",
-    location: "Salta, Argentina",
-    price: 145000,
-    image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
-    description: "Conocé nuevos destinos y culturas.",
-  },
 ];
 
 function Header({ onHome }) {
@@ -274,6 +157,66 @@ function App() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [productsError, setProductsError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+  async function loadProducts() {
+    try {
+      setLoadingProducts(true);
+      setProductsError("");
+    const data = await obtenerProductos();
+
+    if (!Array.isArray(data)) {
+      throw new Error("La API no devolvió una lista de productos.");
+    }
+  const productosAdaptados = data.map((producto) => {
+  const images = Array.isArray(producto.images)
+    ? producto.images.filter(Boolean)
+    : [];
+
+  const mainImage =
+    producto.image ?? producto.imagen ?? images[0] ?? "";
+
+  return {
+    id: producto.id,
+    name: producto.name ?? producto.nombre ?? "",
+    category: producto.category ?? producto.categoria ?? "",
+    location: producto.location ?? producto.ubicacion ?? "",
+    price: Number(producto.price ?? producto.precio ?? 0),
+    image: mainImage,
+    images: images.length ? images : mainImage ? [mainImage] : [],
+    description: producto.description ?? producto.descripcion ?? "",
+  };
+  });
+
+    if (!cancelled) {
+      setProducts(productosAdaptados);
+    }
+    } catch (error) {
+      if (!cancelled) {
+        setProductsError(
+          "No pudimos cargar los productos desde el servidor. " +
+          "Verificá que Spring Boot esté funcionando."
+        );
+        console.error("Error cargando productos:", error);
+      }
+    } finally {
+      if (!cancelled) {
+        setLoadingProducts(false);
+      }
+    }
+  }
+
+  loadProducts();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
 
   const pageSize = 10;
 
@@ -319,18 +262,54 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // Selección aleatoria sin repetir productos.
-  // Se calcula una sola vez por carga de la aplicación.
-  const [recommendations] = useState(() => {
-    const shuffled = [...products];
+  const recommendations = [...products]
+  .sort((a, b) => a.id - b.id)
+  .slice(0, 10);
 
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
+  if (window.location.pathname.startsWith("/administracion")) {
+    return (
+      <AdminPanel
+        products={products}
+        onAddProduct={async (newProduct) => {
+          const created = await crearProducto(newProduct);
 
-    return shuffled.slice(0, 10);
-  });
+        const images = Array.isArray(created.images) && created.images.length
+    ? created.images
+    : Array.isArray(newProduct.images)
+      ? newProduct.images.filter(Boolean)
+      : [];
+
+const product = {
+  id: created.id,
+  name: created.name ?? created.nombre ?? newProduct.name,
+  category:
+    created.category ?? created.categoria ?? newProduct.category,
+  location:
+    created.location ?? created.ubicacion ?? newProduct.location,
+  price: Number(
+    created.price ?? created.precio ?? newProduct.price
+  ),
+  image:
+    created.image ?? created.imagen ?? images[0] ?? newProduct.image,
+  images,
+  description:
+    created.description ??
+    created.descripcion ??
+    newProduct.description,
+};
+
+        setProducts((current) => [...current, product]);
+      }}
+      onDeleteProduct={async (productId) => {
+        await eliminarProducto(productId);
+
+        setProducts((current) =>
+          current.filter((product) => product.id !== productId)
+        );
+      }}
+    />
+  );
+}
 
   if (selectedProduct) {
     return (
@@ -457,26 +436,40 @@ function App() {
 
         <section className="section catalog-section" id="catalogo">
           <div className="section-heading catalog-heading">
-            <div>
-              <span className="eyebrow">INSPIRACIÓN PARA VOS</span>
+          <div>
+            <span className="eyebrow">INSPIRACIÓN PARA VOS</span>
 
-              <h2>
-                {category === "Todos"
-                  ? "Descubrí nuevas experiencias"
-                  : category}
-              </h2>
+            <h2>
+              {category === "Todos"
+                ? "Descubrí nuevas experiencias"
+                : category}
+            </h2>
 
-              <p>
-                Encontramos {filteredProducts.length} propuestas para vos.
-              </p>
-            </div>
-
-            <span className="results-badge">
-              {filteredProducts.length} productos
-            </span>
+            <p>
+              Encontramos {filteredProducts.length} propuestas para vos.
+            </p>
           </div>
 
-          {visibleProducts.length > 0 ? (
+          <span className="results-badge">
+            {filteredProducts.length} productos
+          </span>
+        </div>
+            {loadingProducts ? (
+            <div className="empty-state">
+              <p>Cargando experiencias...</p>
+            </div>
+          ) : productsError ? (
+            <div className="empty-state">
+              <h3>No pudimos cargar los productos</h3>
+              <p>{productsError}</p>
+              <button
+                className="btn btn-primary"
+                onClick={() => window.location.reload()}
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : visibleProducts.length > 0 ? (
             <div className="products-grid">
               {visibleProducts.map((product) => (
                 <ProductCard
@@ -489,13 +482,10 @@ function App() {
           ) : (
             <div className="empty-state">
               <Search size={32} />
-
               <h3>No encontramos resultados</h3>
-
               <p>
                 Probá otra búsqueda o seleccioná una categoría diferente.
               </p>
-
               <button
                 className="btn btn-primary"
                 onClick={() => {
