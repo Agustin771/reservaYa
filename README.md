@@ -71,7 +71,7 @@ cd reservaYa
 
 Iniciar MySQL y crear una base de datos para el proyecto:
 
-CREATE DATABASE reservaya;
+CREATE DATABASE proyecto_coder;
 
 Configurar las credenciales de conexión en el backend según las variables utilizadas por la aplicación.
 
